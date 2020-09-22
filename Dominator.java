@@ -1,11 +1,12 @@
+
 /**
-* The Dominator program produces dominator sets for all nodes in a connected digraph
+* The Dominator program produces dominator sets for all nodes in a Control Flow Graph.
 * The dominator of the start node is the start node itself.
 * The set of dominators for any other node n is the intersection of 
 * the set of dominators for all predecessors p of n. 
 * The node n is also in the set of dominators for n.
-* private Map<Character, Set<Character>> preds contains immidiate predecessors of
-* all the nodes. Just in the case of root node, it is also an immidiate predecessor of itself.
+* private Map<Character, Set<Character>> preds contains immediate predecessors of
+* all the nodes. Just in the case of root node, it is also an immediate predecessor of itself.
 *
 * @author  Hetul Bhatt
 * @version 1.0
@@ -14,6 +15,8 @@
 
 import java.io.FileNotFoundException;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
@@ -25,12 +28,14 @@ public class Dominator {
 	private Map<Character, Set<Character>> adjList;
 	private Map<Character, Set<Character>> dominator;
 	private Map<Character, Set<Character>> preds;
+	private Map<Character, List<Character>> dominatorTreeAdjList;
 
 	public Dominator() {
 		this.initializeAdjecencyList();
 		this.initializeDominator();
-		this.immidiatePredMaker();
+		this.initializeImmediatePreds();
 		this.finalizeDominator();
+		this.initializeDominatorTreeAdjList();
 	}
 
 	public final Scanner scannerFactory() throws Exception {
@@ -42,7 +47,7 @@ public class Dominator {
 		System.out.print("Enter choice: ");
 		Scanner sc = new Scanner(System.in);
 		int option = Integer.parseInt(sc.nextLine());
-		switch(option) {
+		switch (option) {
 			case 1:
 				file = new File("input1.txt");
 				sc = new Scanner(file);
@@ -81,16 +86,17 @@ public class Dominator {
 					this.root = key;
 				}
 			}
-		} catch(FileNotFoundException e) {
-			System.out.println("FileNotFoundException occured. Check if input file is present in the current directory.");
+		} catch (FileNotFoundException e) {
+			System.out
+					.println("FileNotFoundException occured. Check if input file is present in the current directory.");
 			System.exit(1);
-		} catch(IndexOutOfBoundsException e) {
+		} catch (IndexOutOfBoundsException e) {
 			System.out.println("Exception occured. Enter valid input.");
 			System.exit(2);
-		} catch(NumberFormatException e) {
+		} catch (NumberFormatException e) {
 			System.out.println("Exception occured. Enter valid input.");
 			System.exit(2);
-		} catch(Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(3);
 		} finally {
@@ -118,7 +124,7 @@ public class Dominator {
 		this.dominator.put(this.root, onechar);
 	}
 
-	public final void immidiatePredMaker() {
+	public final void initializeImmediatePreds() {
 		this.preds = new TreeMap<>();
 		Set<Character> rootSet = new TreeSet<>();
 		rootSet.add(this.root);
@@ -153,10 +159,41 @@ public class Dominator {
 		}
 	}
 
+	public final void initializeDominatorTreeAdjList() {
+		this.dominatorTreeAdjList = new TreeMap<>();
+		outer: for (Map.Entry<Character, Set<Character>> e : this.dominator.entrySet()) {
+			Character maxc = null;
+			int max = 0;
+			for (Character c : e.getValue()) {
+				if (c == this.root && e.getValue().size() == 1) {
+					continue outer;
+				}
+				if (c != e.getKey() && this.dominator.get(c).size() > max) {
+					max = this.dominator.get(c).size();
+					maxc = c;
+				}
+			}
+			if (this.dominatorTreeAdjList.containsKey(maxc)) {
+				List<Character> temp = this.dominatorTreeAdjList.get(maxc);
+				temp.add(e.getKey());
+				this.dominatorTreeAdjList.put(maxc, temp);
+			} else {
+				List<Character> temp = new ArrayList<>();
+				temp.add(e.getKey());
+				this.dominatorTreeAdjList.put(maxc, temp);
+			}
+		}
+	}
+
 	public static void main(String[] args) {
 		Dominator d = new Dominator();
-		d.flush("\nAdjacency List:",d.adjList);
-		d.flush("\nImmidiate Predecessors:",d.preds);
-		d.flush("\nDominator sets:",d.dominator);
+
+		d.flush("\nAdjacency List:", d.adjList);
+		d.flush("\nImmidiate Predecessors:", d.preds);
+		d.flush("\nDominator sets:", d.dominator);
+		System.out.println("\nDominator tree adjecency tree:");
+		for (Map.Entry<Character, List<Character>> e : d.dominatorTreeAdjList.entrySet()) {
+			System.out.println(e.getKey() + " => " + e.getValue());
+		}
 	}
 }
